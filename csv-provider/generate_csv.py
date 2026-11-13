@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Contributors to the Eclipse Foundation
+# SPDX-FileCopyrightText: 2026 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -16,6 +16,15 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+
+# This script generates CSV files with (randomly generated) vehicle metadata and state information
+# which can be used for testing or simulation purposes.
+# The generated CSV files can be used with the Eclipse Kuksa CSV Provider to update VSS signals according
+# to the drive cycles.
+#
+# This script is mainly copied from a script originally created by Kai Kreutzer
+# (https://github.com/kaikreuzer/eclipse-sdv-lmos-demo/blob/main/fm-blueprint/generate_csv.py)
+# for generating vehicle CSV data.
 
 import csv
 from pyexpat import model
@@ -42,7 +51,7 @@ class VehicleMetadata:
         self.vehicle_type = "TRUCK"
         self.production_date = f"{random.randint(2010, 2026)}-{random.randint(1, 12):02d}-{random.randint(1, 28):02d}"
 
-    def write_values(self, csv_writer):
+    def write_values(self, writer):
         writer.writerow([
             "current",
             "Vehicle.VehicleIdentification.VIN",
@@ -75,6 +84,12 @@ class VehicleMetadata:
         ])
 
 class VehicleState:
+    IDLE_RPM = 700
+
+    @staticmethod
+    def calculate_engine_speed(vehicle_speed):
+        return int(VehicleState.IDLE_RPM + 260 * math.log(1 + max(0.0, vehicle_speed)))
+
     def __init__(self):
         # Initialization with standard values
         self.working_state_driver1 = random.choice(["REST", "DRIVE", "WORK"])
@@ -122,7 +137,7 @@ class VehicleState:
             self.target_speed = random.uniform(60, 85)
             self.current_speed = self.target_speed
             self.vehicle_speed = self.current_speed
-            self.engine_speed = 800 + self.vehicle_speed * 15
+            self.engine_speed = self.calculate_engine_speed(self.vehicle_speed)
 
             # Counters for cruise control behavior
             # Shorter periods of constant speed
@@ -140,7 +155,7 @@ class VehicleState:
             self.speed_phase = 0
             self.vehicle_speed = 0
             # 70% chance engine is off when parked
-            self.engine_speed = 0 if random.random() < 0.7 else 800
+            self.engine_speed = 0 if random.random() < 0.7 else VehicleState.IDLE_RPM
             self.working_state_driver1 = "REST"
 
         # Initialize GPS coordinates in Central Europe
@@ -360,7 +375,7 @@ class VehicleState:
                         10, 30)  # Set next cruise duration
 
             # Engine speed follows vehicle speed without feedback loops
-            target_rpm = 800 + self.vehicle_speed * 15
+            target_rpm = self.calculate_engine_speed(self.vehicle_speed)
             self.engine_speed = target_rpm + \
                 random.uniform(-20, 20)  # Small variation in RPM
 
@@ -374,7 +389,7 @@ class VehicleState:
                 self.vehicle_speed = max(0, self.vehicle_speed - 2)
 
                 # Engine speed follows accordingly
-                self.engine_speed = 800 + self.vehicle_speed * 15
+                self.engine_speed = self.calculate_engine_speed(self.vehicle_speed)
 
                 # Still driving until fully stopped
                 if self.vehicle_speed > 5:
@@ -392,7 +407,7 @@ class VehicleState:
                         self.engine_speed = max(0, self.engine_speed - 200)
                     else:
                         # Idle fluctuations
-                        self.engine_speed = 800 + random.uniform(-20, 20)
+                        self.engine_speed = VehicleState.IDLE_RPM + random.uniform(-20, 20)
 
                 self.working_state_driver1 = "REST"
                 self.parking_brake_engaged = True
@@ -566,31 +581,31 @@ class VehicleState:
             "current",
             "Vehicle.Powertrain.CombustionEngine.IsRunning",
             str(self.is_engine_running),
-            round(random.uniform(0, 1), 4)
+            round(random.uniform(0.0, 0.1), 4)
         ])
         writer.writerow([
             "current",
             "Vehicle.Tachograph.Driver.Driver1.IsCardPresent",
             str(self.is_card_present_driver1),
-            round(random.uniform(0, 1), 4)
+            round(random.uniform(0.0, 0.1), 4)
         ])
         writer.writerow([
             "current",
             "Vehicle.Tachograph.Driver.Driver1.WorkingState",
             self.working_state_driver1,
-            round(random.uniform(0, 1), 4)
+            round(random.uniform(0.0, 0.1), 4)
         ])
         writer.writerow([
             "current",
             "Vehicle.Tachograph.Driver.Driver2.WorkingState",
             self.working_state_driver2,
-            round(random.uniform(0, 1), 4)
+            round(random.uniform(0.0, 0.1), 4)
         ])
         writer.writerow([
             "current",
             "Vehicle.Tachograph.Driver.Driver2.IsCardPresent",
             str(self.is_card_present_driver2),
-            round(random.uniform(0, 1), 4)
+            round(random.uniform(0.0, 0.1), 4)
         ])
         writer.writerow([
             "current",
@@ -626,76 +641,77 @@ class VehicleState:
             "current",
             "Vehicle.Tachograph.VehicleSpeed",
             round(self.vehicle_speed, 1),
-            round(random.uniform(0, 1), 4)
+            round(random.uniform(0.0, 0.1), 4)
         ])
         writer.writerow([
             "current",
             "Vehicle.Powertrain.CurrentFuelType",
             self.fuel_type,
-            round(random.uniform(0, 1), 4)
+            round(random.uniform(0.0, 0.1), 4)
         ])
         writer.writerow([
             "current",
             "Vehicle.Powertrain.FuelSystem.Tank.First.RelativeLevel",
             int(round(self.fuel_level)),
-            round(random.uniform(0, 1), 4)
+            round(random.uniform(0.0, 0.1), 4)
         ])
         writer.writerow([
             "current",
             "Vehicle.TraveledDistanceHighRes",
             self.traveled_distance,
-            round(random.uniform(0, 1), 4)
+            round(random.uniform(0.0, 0.1), 4)
         ])
         writer.writerow([
             "current",
             "Vehicle.Powertrain.CombustionEngine.DieselExhaustFluid.Level",
             int(round(self.adblue_level)),
-            round(random.uniform(0, 1), 4)
+            round(random.uniform(0.0, 0.1), 4)
         ])
         writer.writerow([
             "current",
             "Vehicle.Powertrain.CombustionEngine.Speed",
             round(self.engine_speed),
-            round(random.uniform(0, 1), 4)
+            round(random.uniform(0.0, 0.1), 4)
         ])
         writer.writerow([
             "current",
             "Vehicle.Chassis.ParkingBrake.IsEngaged",
             str(self.parking_brake_engaged),
-            round(random.uniform(0, 1), 4)
+            round(random.uniform(0.0, 0.1), 4)
         ])
         writer.writerow([
             "current",
             "Vehicle.Exterior.AirTemperature",
             round(self.air_temperature, 1),
-            round(random.uniform(0, 1), 4)
+            round(random.uniform(0.0, 0.1), 4)
         ])
         writer.writerow([
             "current",
             "Vehicle.Powertrain.CombustionEngine.EngineHours",
             round(self.engine_hours, 3),
-            round(random.uniform(0, 1), 4)
+            round(random.uniform(0.0, 0.1), 4)
         ])
         writer.writerow([
             "current",
             "Vehicle.CurrentOverallWeight",
             int(round(self.current_weight)),
-            round(random.uniform(0, 1), 4)
+            # insert ~1 sec delay between reporting cycles
+            round(random.uniform(0.9, 1.1), 4)
         ])
 
         # Neither VSS nor FMS do define these signals
         # writer.writerow(["current", "Vehicle.Tachograph.Driver.Driver1.NeedsBreak",
-        #                 str(self.driver1_needs_break), round(random.uniform(0, 1), 4)])
+        #                 str(self.driver1_needs_break), round(random.uniform(0.0, 0.1), 4)])
         # writer.writerow(["current", "Vehicle.Tachograph.Driver.Driver2.NeedsBreak",
-        #                 str(self.driver2_needs_break), round(random.uniform(0, 1), 4)])
+        #                 str(self.driver2_needs_break), round(random.uniform(0.0, 0.1), 4)])
         # writer.writerow(["current", "Vehicle.Tachograph.Driver.Driver1.ActiveCycles",
-        #                 self.driver1_active_cycles, round(random.uniform(0, 1), 4)])
+        #                 self.driver1_active_cycles, round(random.uniform(0.0, 0.1), 4)])
         # writer.writerow(["current", "Vehicle.Tachograph.Driver.Driver2.ActiveCycles",
-        #                 self.driver2_active_cycles, round(random.uniform(0, 1), 4)])
+        #                 self.driver2_active_cycles, round(random.uniform(0.0, 0.1), 4)])
         # writer.writerow(["current", "Vehicle.Tachograph.Driver.Driver1.RestCycles",
-        #                 self.driver1_rest_cycles, round(random.uniform(0, 1), 4)])
+        #                 self.driver1_rest_cycles, round(random.uniform(0.0, 0.1), 4)])
         # writer.writerow(["current", "Vehicle.Tachograph.Driver.Driver2.RestCycles",
-        #                 self.driver2_rest_cycles, round(random.uniform(0, 1), 4)])
+        #                 self.driver2_rest_cycles, round(random.uniform(0.0, 0.1), 4)])
 
     
 # Set up argument parser for command line options
