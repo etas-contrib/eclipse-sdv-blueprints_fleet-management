@@ -25,7 +25,6 @@ documentation.workspace = true
 [dependencies]
 async-trait = { workspace = true }
 clap = { workspace = true, features = ["std", "derive", "env"] }
-fms-proto = { workspace = true }
 futures = { version = "0.3" }
 log = { workspace = true }
 protobuf = { workspace = true }

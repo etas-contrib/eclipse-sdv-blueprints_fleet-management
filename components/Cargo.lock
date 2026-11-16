@@ -1045,7 +1045,6 @@ dependencies = [
 name = "fms-server"
 version = "0.1.0-SNAPSHOT"
 dependencies = [
- "async-trait",
  "axum",
  "chrono",
  "clap",
@@ -1064,8 +1063,6 @@ name = "fms-zenoh"
 version = "0.1.0-SNAPSHOT"
 dependencies = [
  "clap",
- "log",
- "up-transport-zenoh",
 ]
 
 [[package]]
@@ -4422,7 +4419,6 @@ version = "0.1.0-SNAPSHOT"
 dependencies = [
  "async-trait",
  "clap",
- "fms-proto",
  "futures",
  "log",
  "protobuf",

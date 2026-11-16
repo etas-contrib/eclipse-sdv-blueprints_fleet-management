@@ -39,7 +39,6 @@ documentation = "https://eclipse-sdv-blueprints.github.io/blueprints-website/"
 
 [workspace.dependencies]
 async-trait = { version = "0.1.92" }
-bytes = { version = "1.12.1" }
 chrono = { version = "0.4.45", default-features = false }
 clap = { version = "4.6.7", default-features = false }
 env_logger = { version = "0.11.11", default-features = false, features = [
